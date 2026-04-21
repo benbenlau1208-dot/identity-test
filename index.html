@@ -1,1 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>性格小測試 · 隨機評分測驗</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #d9e0ec 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            padding: 20px 16px 40px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.96);
+            border-radius: 48px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+        .header {
+            background: #1f2b4e;
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            margin-top: 6px;
+        }
+        .category-badge {
+            background: #ffd966;
+            color: #1f2b4e;
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin: 16px 20px 0;
+        }
+        .content {
+            padding: 20px 20px 28px;
+        }
+        .question-card {
+            background: #f9fafc;
+            border-radius: 32px;
+            padding: 24px 20px;
+            margin-bottom: 24px;
+            border: 1px solid #eef2f8;
+        }
+        .question-text {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #1a2a44;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+        .rating {
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .rating-btn {
+            flex: 1;
+            text-align: center;
+            background: #eef2f8;
+            border-radius: 60px;
+            padding: 10px 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #2c3e66;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .rating-btn.selected {
+            background: #1f2b4e;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #1f2b4e;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            transition: 0.1s;
+        }
+        .btn-secondary {
+            background: #7c8db0;
+            margin-top: 12px;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .result-area {
+            background: #f0f4fa;
+            border-radius: 40px;
+            padding: 20px;
+            margin-top: 24px;
+            text-align: center;
+        }
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1f2b4e;
+            margin-bottom: 12px;
+        }
+        canvas {
+            max-height: 260px;
+            width: 100%;
+            margin: 12px 0;
+        }
+        .animal {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #2c3e66, #1f2b4e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 12px 0 6px;
+        }
+        .animal-desc {
+            font-size: 0.9rem;
+            color: #2c3e66;
+            background: white;
+            border-radius: 24px;
+            padding: 12px;
+            margin-top: 12px;
+            text-align: left;
+            line-height: 1.5;
+        }
+        .footer-note {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #7e8aa8;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🧬 性格小測試</h1>
+        <p>隨機抽題 · 逐步建構你嘅性格圖譜</p>
+    </div>
+    <div id="categoryLabel" class="category-badge">— 載入中 —</div>
+    <div class="content">
+        <!-- 第一頁：單題頁面 -->
+        <div id="singlePage">
+            <div class="question-card">
+                <div class="question-text" id="singleQuestionText"></div>
+                <div class="rating" id="singleRating">
+                    <!-- 1-5 按鈕會動態產生 -->
+                </div>
+                <button id="nextBtn" class="btn">下一步 ➡️</button>
+                <button id="refreshSingleCategoryBtn" class="btn btn-secondary">🔄 更換範疇</button>
+            </div>
+        </div>
 
+        <!-- 第二頁：剩餘6題頁面 -->
+        <div id="multiPage" class="hidden">
+            <div id="multiQuestionsContainer"></div>
+            <div class="button-bar">
+                <button id="backToSingleBtn" class="btn btn-secondary">⬅️ 返回抽題</button>
+                <button id="refreshMultiCategoryBtn" class="btn btn-secondary">🔄 更換範疇</button>
+            </div>
+        </div>
+
+        <!-- 結果區：六邊形 + 動物描述 -->
+        <div id="resultArea" class="result-area">
+            <div class="result-title">📊 你嘅性格光譜</div>
+            <canvas id="radarChart" width="400" height="400"></canvas>
+            <div class="animal" id="animalName">—</div>
+            <div class="animal-desc" id="animalDesc">回答問題後會顯示你嘅專屬動物及詳細分析</div>
+        </div>
+    </div>
+    <div class="footer-note">
+        💡 每題按 1-5 評分（1=非常唔同意，5=非常同意）<br>
+        累積回答越多，光譜越貼近你真實性格！
+    </div>
+</div>
+
+<script>
+    // ======================= 1. 定義維度 =======================
+    const DIMENSIONS = ["openness", "empathy", "humor", "curiosity", "confidence", "playfulness"];
+    const DIM_LABELS = {
+        openness: "開放性",
+        empathy: "共情力",
+        humor: "幽默感",
+        curiosity: "好奇心",
+        confidence: "自信心",
+        playfulness: "玩心"
+    };
+
+    // 累積數據
+    let dimensionTotals = {
+        openness: 0, empathy: 0, humor: 0, curiosity: 0, confidence: 0, playfulness: 0
+    };
+    let dimensionCounts = {
+        openness: 0, empathy: 0, humor: 0, curiosity: 0, confidence: 0, playfulness: 0
+    };
+
+    // 儲存所有已答問題的分數 (key: 問題文字)
+    let allAnswers = {};
+
+    // ======================= 2. 範疇與問題庫（全部改為可評分陳述句）=======================
+    const categories = {
+        travel: {
+            name: "✈️ 旅行",
+            questions: [
+                { text: "我旅行時喜歡「特種兵式」踩點，一日去10個以上景點。", dimension: "playfulness" },
+                { text: "我去旅行一定會帶三件以上非必需品。", dimension: "openness" },
+                { text: "我有過非常「中伏」嘅旅行經歷，諗起都好笑。", dimension: "humor" },
+                { text: "我會為咗打卡而專登去一個我本來冇興趣嘅地方。", dimension: "curiosity" },
+                { text: "我旅行前會做足功課，規劃好每小時行程。", dimension: "confidence" },
+                { text: "我試過因為旅行同朋友鬧交，影響友情。", dimension: "empathy" },
+                { text: "如果而家即刻可以飛，我心中有一個即刻想去嘅地方。", dimension: "openness" }
+            ]
+        },
+        love: {
+            name: "💕 戀愛觀",
+            questions: [
+                { text: "我會選擇「性格好但樣衰」多過「靚仔但性格差」。", dimension: "openness" },
+                { text: "我覺得拍拖唔一定要結婚，不婚主義都可以接受。", dimension: "openness" },
+                { text: "我完全接受同另一半AA制，即使對方想請我都會拒絕。", dimension: "confidence" },
+                { text: "我認為「𥄫女/𥄫仔」已經算係精神出軌。", dimension: "empathy" },
+                { text: "喺戀愛中，我覺得「坦白」比「善意謊言」更重要。", dimension: "empathy" },
+                { text: "我聽過或見過好離譜嘅分手原因。", dimension: "humor" },
+                { text: "如果另一半同我講「暫時分開吓」，我會好冷靜處理。", dimension: "confidence" }
+            ]
+        },
+        food: {
+            name: "🍔 食物",
+            questions: [
+                { text: "麥當勞星星薯餅如果變常駐，我會開心到尖叫。", dimension: "playfulness" },
+                { text: "食咖哩飯我一定會撈勻所有汁同飯。", dimension: "playfulness" },
+                { text: "我覺得芫荽係人間美味，完全唔係核廢料。", dimension: "humor" },
+                { text: "食熱狗我一定會加指定醬汁，唔會求其。", dimension: "curiosity" },
+                { text: "我細個鍾意食一樣嘢，大個先知原來好奇怪。", dimension: "humor" },
+                { text: "我完全接受菠蘿披薩，覺得好好味。", dimension: "openness" },
+                { text: "如果成世只可以食一款宵夜，我已經有心水選擇。", dimension: "playfulness" }
+            ]
+        },
+        school: {
+            name: "📚 上學",
+            questions: [
+                { text: "我係典型Deadline Fighter，永遠最後先做功課。", dimension: "confidence" },
+                { text: "我試過遲交assignment超過三日。", dimension: "humor" },
+                { text: "我做group project時最憎遇到「free rider」隊友。", dimension: "empathy" },
+                { text: "如果有科可以「天才波」唔使溫書就A，我會即刻揀。", dimension: "curiosity" },
+                { text: "我上堂成日都會釣魚（恰眼瞓），尤其係某啲堂。", dimension: "humor" },
+                { text: "我見過或聽過好創意嘅走堂藉口。", dimension: "playfulness" },
+                { text: "我覺得讀書主要係為張沙紙，唔係真係學到嘢。", dimension: "openness" }
+            ]
+        },
+        work: {
+            name: "💼 工作",
+            questions: [
+                { text: "我會揀「$90/hr好辛苦」多過「$60/hr好輕鬆」。", dimension: "confidence" },
+                { text: "收工後我會繼續覆老細WhatsApp，最夜試過凌晨。", dimension: "confidence" },
+                { text: "我認為「準時收工」係基本權利，唔係不敬業。", dimension: "openness" },
+                { text: "我見過好離譜嘅office政治事件。", dimension: "humor" },
+                { text: "如果返工可以帶寵物，我覺得工作效率會升。", dimension: "playfulness" },
+                { text: "我覺得「裸辭」係勇敢嘅行為。", dimension: "openness" },
+                { text: "我心目中嘅dream job有好具體嘅條件。", dimension: "curiosity" }
+            ]
+        }
+    };
+    const categoryKeys = ["travel", "love", "food", "school", "work"];
+
+    let currentCategoryKey = "travel";
+    let currentSingleIndex = null;      // 當前第一題在該範疇中的索引
+    let remainingIndices = [];           // 剩餘未答的索引（不含第一題）
+
+    // 圖表實例
+    let chartInstance = null;
+
+    // ======================= 輔助函數 =======================
+    function recomputeGlobalScores() {
+        for (let d of DIMENSIONS) {
+            dimensionTotals[d] = 0;
+            dimensionCounts[d] = 0;
+        }
+        for (let [questionText, score] of Object.entries(allAnswers)) {
+            for (let catKey of categoryKeys) {
+                const cat = categories[catKey];
+                const found = cat.questions.find(q => q.text === questionText);
+                if (found) {
+                    const dim = found.dimension;
+                    dimensionTotals[dim] += score;
+                    dimensionCounts[dim] += 1;
+                    break;
+                }
+            }
+        }
+        updateRadarAndAnimal();
+    }
+
+    function getDimensionAverage() {
+        let avg = {};
+        for (let d of DIMENSIONS) {
+            let count = dimensionCounts[d];
+            avg[d] = count > 0 ? dimensionTotals[d] / count : 2.5;
+        }
+        return avg;
+    }
+
+    function getPersonalityAnimal(scores) {
+        let entries = DIMENSIONS.map(d => ({ dim: d, score: scores[d] }));
+        entries.sort((a, b) => b.score - a.score);
+        const topDim = entries[0].dim;
+        const secondDim = entries[1].dim;
+        const topScore = entries[0].score;
+        const secondScore = entries[1].score;
+
+        const animalBase = {
+            openness: { name: "🦉 智慧貓頭鷹", desc: "你擁有開放嘅心靈，喜歡思考抽象概念、人生意義，對新事物保持好奇。你唔會局限自己，願意聆聽唔同意見，係朋友中嘅思想家。" },
+            empathy: { name: "🐘 溫柔大象", desc: "你嘅共情力極高，好容易察覺別人嘅情緒，懂得聆聽同陪伴。朋友傷心時總會第一個搵你，因為你俾到人安全感同溫暖。" },
+            humor: { name: "🐒 鬼馬猴子", desc: "你係氣氛擔當，有你在場永遠唔會 deadair。你擅長用幽默化解尷尬，自嘲同講笑話係你嘅強項，身邊人同你一齊會好開心。" },
+            curiosity: { name: "🐱 好奇貓貓", desc: "你對世界充滿好奇，成日問「點解」，喜歡學新嘢、試新嘢。你唔怕麻煩，最享受發掘未知嘅樂趣，係朋友中嘅探險家。" },
+            confidence: { name: "🦁 自信獅子", desc: "你自信果斷，唔怕表達自己意見，遇到困難會主動解決。你有領導才能，令人願意跟隨你，係團隊中嘅定心丸。" },
+            playfulness: { name: "🐬 快樂海豚", desc: "你貪玩、有童心，生活對你嚟講係一場遊戲。你最擅長將沉悶嘅事變有趣，同你一齊永遠唔會悶，充滿歡笑。" }
+        };
+        let specialDesc = "";
+        if (topDim === "humor" && secondDim === "playfulness" && topScore >= 4 && secondScore >= 3.5) {
+            specialDesc = " 你尤其擅長將幽默同玩樂結合，係聚會嘅靈魂人物，有你在場就係歡樂保證！";
+        } else if (topDim === "empathy" && secondDim === "openness") {
+            specialDesc = " 你既有深度又溫柔，能夠理解複雜嘅情感，同時保持開放態度，係好多人嘅心靈支柱。";
+        } else if (topDim === "confidence" && secondDim === "curiosity") {
+            specialDesc = " 你勇敢又充滿求知慾，唔怕冒險嘗試新事物，同時有自信帶領大家一齊前進。";
+        } else if (topDim === "playfulness" && secondDim === "humor") {
+            specialDesc = " 你玩得又笑得，生活對你嚟講就係遊樂場，總係用輕鬆嘅態度面對困難。";
+        } else if (topDim === "openness" && secondDim === "empathy") {
+            specialDesc = " 你思想開放同時善解人意，能夠包容唔同觀點，係朋友中嘅智者同調解員。";
+        } else if (topScore >= 4.5) {
+            specialDesc = " 你喺呢個維度非常突出，明顯比一般人更強烈，係你嘅核心特質！";
+        } else {
+            specialDesc = " 你各方面都幾平衡，擁有獨特嘅性格光譜。";
+        }
+        return { name: animalBase[topDim].name, desc: animalBase[topDim].desc + specialDesc };
+    }
+
+    function updateRadarAndAnimal() {
+        const scores = getDimensionAverage();
+        const ctx = document.getElementById("radarChart").getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: DIMENSIONS.map(d => DIM_LABELS[d]),
+                datasets: [{
+                    label: '平均分 (1-5)',
+                    data: DIMENSIONS.map(d => scores[d]),
+                    backgroundColor: 'rgba(31, 43, 78, 0.2)',
+                    borderColor: '#1f2b4e',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#2c3e66',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { r: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } }
+            }
+        });
+        const animal = getPersonalityAnimal(scores);
+        document.getElementById("animalName").innerHTML = animal.name;
+        document.getElementById("animalDesc").innerHTML = animal.desc;
+    }
+
+    // 隨機選取新範疇及第一題
+    function randomizeNewCategory() {
+        let newKey;
+        do {
+            newKey = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
+        } while (newKey === currentCategoryKey && categoryKeys.length > 1);
+        currentCategoryKey = newKey;
+        const cat = categories[currentCategoryKey];
+        // 隨機選一個索引作為第一題
+        currentSingleIndex = Math.floor(Math.random() * cat.questions.length);
+        // 剩餘索引為除了 currentSingleIndex 以外的所有索引
+        remainingIndices = [];
+        for (let i = 0; i < cat.questions.length; i++) {
+            if (i !== currentSingleIndex) remainingIndices.push(i);
+        }
+        // 更新顯示
+        document.getElementById("categoryLabel").innerHTML = cat.name;
+        renderSinglePage();
+        // 切換頁面到單題頁
+        document.getElementById("singlePage").classList.remove("hidden");
+        document.getElementById("multiPage").classList.add("hidden");
+    }
+
+    // 渲染第一頁（單題）
+    function renderSinglePage() {
+        const cat = categories[currentCategoryKey];
+        const question = cat.questions[currentSingleIndex];
+        document.getElementById("singleQuestionText").innerHTML = question.text;
+        const ratingDiv = document.getElementById("singleRating");
+        const currentScore = allAnswers[question.text] || 3;
+        ratingDiv.innerHTML = '';
+        for (let v = 1; v <= 5; v++) {
+            const btn = document.createElement('div');
+            btn.className = `rating-btn ${currentScore === v ? 'selected' : ''}`;
+            btn.innerText = v;
+            btn.onclick = () => {
+                // 更新分數
+                allAnswers[question.text] = v;
+                recomputeGlobalScores();
+                // 更新UI高亮
+                document.querySelectorAll('#singleRating .rating-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            };
+            ratingDiv.appendChild(btn);
+        }
+    }
+
+    // 渲染第二頁（剩餘6題）
+    function renderMultiPage() {
+        const cat = categories[currentCategoryKey];
+        const container = document.getElementById("multiQuestionsContainer");
+        container.innerHTML = '';
+        for (let idx of remainingIndices) {
+            const q = cat.questions[idx];
+            const currentScore = allAnswers[q.text] || 3;
+            const div = document.createElement('div');
+            div.className = 'question-card';
+            div.innerHTML = `
+                <div class="question-text">${q.text}</div>
+                <div class="rating" data-qtext="${q.text.replace(/"/g, '&quot;')}">
+                    ${[1,2,3,4,5].map(v => `<div class="rating-btn ${currentScore === v ? 'selected' : ''}" data-val="${v}">${v}</div>`).join('')}
+                </div>
+            `;
+            container.appendChild(div);
+        }
+        // 綁定評分事件
+        document.querySelectorAll('#multiQuestionsContainer .rating').forEach(ratingDiv => {
+            const qtext = ratingDiv.getAttribute('data-qtext');
+            const btns = ratingDiv.querySelectorAll('.rating-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = parseInt(btn.getAttribute('data-val'));
+                    allAnswers[qtext] = val;
+                    recomputeGlobalScores();
+                    btns.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                });
+            });
+        });
+    }
+
+    // 事件綁定
+    document.getElementById("nextBtn").addEventListener("click", () => {
+        renderMultiPage();
+        document.getElementById("singlePage").classList.add("hidden");
+        document.getElementById("multiPage").classList.remove("hidden");
+    });
+    document.getElementById("backToSingleBtn").addEventListener("click", () => {
+        renderSinglePage();
+        document.getElementById("multiPage").classList.add("hidden");
+        document.getElementById("singlePage").classList.remove("hidden");
+    });
+    document.getElementById("refreshSingleCategoryBtn").addEventListener("click", () => {
+        randomizeNewCategory();
+    });
+    document.getElementById("refreshMultiCategoryBtn").addEventListener("click", () => {
+        randomizeNewCategory();
+    });
+
+    // 初始化
+    randomizeNewCategory();
+</script>
+</body>
+</html>
